@@ -1,9 +1,7 @@
 import java.net.*;
-import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.*;
 import java.util.Base64;
-import java.util.Random;
 
 import javax.crypto.*;
 import java.io.*;
@@ -14,13 +12,10 @@ public class ServidorMain {
 
     //Atributos
     private ServerSocket serverSocket;
-    private Socket clientSocket;
-    private PrintWriter out;
-    private BufferedReader in;
     private PrivateKey privateKey;
     private BigInteger p;
     private int g;
-    private int gx;
+
 
 
     //Constructor
@@ -29,15 +24,8 @@ public class ServidorMain {
         this.privateKey = procesarLlavePrivada();
         this.p = procesarP();
         this.g = 2;
-        this.gx = procesarGX();
     }
 
-    public int procesarGX(){
-        Random random = new Random();
-        int x = random.nextInt(10) + 1;
-        int resultado = (int) Math.pow(g,x);
-        return resultado;
-    }
 
     //Procesar los valores de p 
     public BigInteger procesarP(){
@@ -60,73 +48,29 @@ public class ServidorMain {
         return priv;
     }
 
-    public byte[] cifrarPrivada(PrivateKey privateKey, String msg) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException{
 
-        Cipher cifrador = Cipher.getInstance("RSA");
-        cifrador.init(Cipher.ENCRYPT_MODE, privateKey);
-        byte[] textoCifrado = cifrador.doFinal(msg.getBytes(StandardCharsets.UTF_8));
+    public void start1(int port) throws IOException{
 
-        return textoCifrado;
-
-    }
-
-
-    public void generarVectorInicial(){
-
-        
-
-    }
-
-
-    public void start(int port) throws IOException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
-
-        //Inicializar el servidor
         serverSocket = new ServerSocket(port);
-        clientSocket = serverSocket.accept();
-        out = new PrintWriter(clientSocket.getOutputStream(), true);
-        in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-        //Primer Paso Recibir reto
-        String[] greeting = in.readLine().split(",");
+        System.out.println("Inicializado el servidor en el puerto " + port);
 
-        //Si el codigo es correcto inicializar el protocolo
-        if(greeting[0].equals("SECURE INIT")){
-
-            //Cifrar el reto con la llave privada y enviarlo al cliente
-            byte[] primer = cifrarPrivada(privateKey, greeting[1]);
-            String textoCifradoEnviar = Base64.getEncoder().encodeToString(primer);
-            out.println(textoCifradoEnviar);
-
+        while(true){
+            Socket clienSocket = serverSocket.accept();
+            System.out.println("New client connected: " + clienSocket);
+            
+            ServidorThread cliente = new ServidorThread(clienSocket, privateKey, p, g);
+            cliente.start();
         }
 
-        //Recibir del cliente OK o ERROR
-        String oka = in.readLine();
-
-        //Si el cliente verifico el reto se puede seguir
-        if (oka.equals("OK")){
-
-            System.out.println("Verificacion Terminada Exitosamente");
-
-        }
-
-
-        //Enviar valores de P, G, G^x y vector de inicializacion al cliente
-        out.println(p);
-        out.println(g);
-        out.println(gx);
-
-
-        in.close();
-        out.close();
-        clientSocket.close();
-        serverSocket.close();
     }
+
 
     public static void main(String[] args) throws IOException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
 
         //Iniciar el servidor
         ServidorMain server = new ServidorMain();
-        server.start(6666);
+        server.start1(6666);
         
     }
 }
