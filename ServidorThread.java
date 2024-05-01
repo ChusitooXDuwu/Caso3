@@ -49,7 +49,7 @@ public class ServidorThread extends Thread{
         return resultado;
     }
 
-    public void start(){
+    public void handleCliente(){
 
         //Crear IN y OUT para la conexion
         try {
@@ -113,15 +113,8 @@ public class ServidorThread extends Thread{
 
     @Override
     public void run(){
-
-        //Crear IN y OUT para la conexion
-        
-        
-
-
-
-        
         System.out.println("Nuevo servidor");
+        handleCliente();
 
     }
     
