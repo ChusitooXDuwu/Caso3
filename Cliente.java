@@ -2,9 +2,16 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.*;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Random;
+
 import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
 import java.io.*;
+import java.math.BigInteger;
 
 public class Cliente {
 
@@ -12,6 +19,14 @@ public class Cliente {
     private PrintWriter out;
     private BufferedReader in;
     private PublicKey publicKey;
+    private BigInteger p;
+    private int g;
+    private int gx1;
+    private int gx2;
+    private int x2;
+    private byte[] vi;
+    private byte[] llaveAutentica;
+    private byte[] llaveHMAC;
 
 
     public Cliente() throws InvalidKeySpecException, NoSuchAlgorithmException{
@@ -49,7 +64,48 @@ public class Cliente {
         in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
     }
 
-    public void secureStart() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    public int procesarGX(){
+        Random random = new Random();
+        int x = random.nextInt(10) + 1;
+        int resultado = (int) Math.pow(g,x);
+        this.x2 = x;
+        return resultado;
+    }
+
+
+    public void procesarLlaves() throws Exception{
+
+        //Calcular y1
+        BigInteger y1 = BigInteger.valueOf(gx1).modPow(BigInteger.valueOf(g), p);
+
+        //Calcular z2
+        BigInteger z2 = y1.modPow(BigInteger.valueOf(x2), p);
+        
+        //Realizar digest con SHA-512
+        MessageDigest digest = MessageDigest.getInstance("SHA-512");
+        digest.update(z2.toString().getBytes());
+        byte[] hash = digest.digest();
+
+        llaveAutentica = Arrays.copyOfRange(hash, 0, hash.length / 2);
+        llaveHMAC = Arrays.copyOfRange(hash, hash.length / 2, hash.length);
+    }
+
+
+    public byte[] cifrarSimetrico(String message, byte[] key)throws Exception{
+
+        // Create AES cipher in CBC mode with PKCS5Padding
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(vi));
+
+        // Encrypt the message
+        byte[] encrypted = cipher.doFinal(message.getBytes());
+
+        return encrypted;
+    }
+
+
+    public void secureStart() throws Exception {
 
         //Enviar inicializacion del servidor con el reto
         String segstart =  "SECURE INIT" + "," + "Reto";;
@@ -69,21 +125,53 @@ public class Cliente {
 
 
         //Recibir P, G y G^x
-        String p = in.readLine();
-        String g = in.readLine();
-        String gx = in.readLine();
+        p = new BigInteger(in.readLine());
+        g =  Integer.parseInt(in.readLine());
+        gx1 = Integer.parseInt(in.readLine());
+        vi = Base64.getDecoder().decode(in.readLine());
 
-        System.out.println("\n\n");
+        //RECIBIR VALORES CIFRADOS 
+        //TODO: FALTA RECIBIR Y ENVIAR OK
 
-        System.out.println(p);
-        System.out.println("\n\n");
-        System.out.println(g);
-        System.out.println("\n\n");
-        System.out.println(gx);
+        //Enviar gx2
+        gx2 = procesarGX();
+        out.println(gx2);
+
+        //Procesar Llaves
+        procesarLlaves();
+
+        //Recibir CONTINUAR
+        String cont = in.readLine();
+        if (cont.equals("CONTINUAR")){
+            System.out.println("CONTINUAR RECIBIDO");
+        }
+
+        //Enviar usuario
+        byte[] loginCifrado = cifrarSimetrico("SOYUNUSUARIO", llaveAutentica);
+        out.println(Base64.getEncoder().encodeToString(loginCifrado));
+
+        //Enviar Contraseña
+        byte[] passCifrado = cifrarSimetrico("SOYUNAPASS", llaveAutentica);
+        out.println(Base64.getEncoder().encodeToString(passCifrado));
+
+
+
+        
     }
 
+    public static String byteArrayToHexString(byte[] array) {
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : array) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
 
-    public static void main(String[] args) throws UnknownHostException, IOException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
+    public static void main(String[] args) throws Exception {
 
         Cliente cliente = new Cliente();
         cliente.startConnection("127.0.0.1", 6666);
