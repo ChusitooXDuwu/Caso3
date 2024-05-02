@@ -105,10 +105,11 @@ public class ServidorThread extends Thread{
         String usuario = decifrarSimetrico(uCif, llaveAutentica, vi);
         String pass = decifrarSimetrico(pCif, llaveAutentica, vi);
 
-        System.out.println(usuario);
-        System.out.println(pass);
-        
-        return true;
+        if(usuario.equals("SOYUNUSUARIO") && pass.equals("SOYUNAPASS")){
+            return true;
+        }
+
+        return false;
 
     }
 
@@ -161,7 +162,9 @@ public class ServidorThread extends Thread{
         //Verificar usuario y contraseña
         boolean verif = verificarUsuario(usuarioCifrado, passCifrado);
 
-
+        if(verif){
+            System.out.println("Usuario Verificado");
+        }
 
 
         in.close();
