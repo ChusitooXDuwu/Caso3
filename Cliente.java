@@ -113,8 +113,7 @@ public class Cliente {
 
         //Recibir el reto cifrado y decifrarlo con la llave publica
         String resp = in.readLine();
-        byte[] byteArray = Base64.getDecoder().decode(resp);
-        byte[] verif = decifrarPublica(publicKey, byteArray);
+        byte[] verif = decifrarPublica(publicKey, hexStringToByteArray(resp));
         String descifradoClaro = new String(verif, StandardCharsets.UTF_8);
 
         //Si el reto es correcto enviar OK
@@ -128,7 +127,7 @@ public class Cliente {
         p = new BigInteger(in.readLine());
         g =  Integer.parseInt(in.readLine());
         gx1 = Integer.parseInt(in.readLine());
-        vi = Base64.getDecoder().decode(in.readLine());
+        vi = hexStringToByteArray(in.readLine());
 
         //RECIBIR VALORES CIFRADOS 
         //TODO: FALTA RECIBIR Y ENVIAR OK
@@ -148,11 +147,11 @@ public class Cliente {
 
         //Enviar usuario
         byte[] loginCifrado = cifrarSimetrico("SOYUNUSUARIO", llaveAutentica);
-        out.println(Base64.getEncoder().encodeToString(loginCifrado));
+        out.println(byteArrayToHexString(loginCifrado));
 
         //Enviar Contraseña
         byte[] passCifrado = cifrarSimetrico("SOYUNAPASS", llaveAutentica);
-        out.println(Base64.getEncoder().encodeToString(passCifrado));
+        out.println(byteArrayToHexString(passCifrado));
 
 
 
@@ -169,6 +168,16 @@ public class Cliente {
             hexString.append(hex);
         }
         return hexString.toString();
+    }
+
+    public static byte[] hexStringToByteArray(String hexString) {
+        int len = hexString.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4)
+                                 + Character.digit(hexString.charAt(i+1), 16));
+        }
+        return data;
     }
 
     public static void main(String[] args) throws Exception {

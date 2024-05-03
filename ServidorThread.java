@@ -119,13 +119,14 @@ public class ServidorThread extends Thread{
         
         out = new PrintWriter(clientSocket.getOutputStream(),true);
         in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
+
         //Primer paso Recibir Reto
         String[] greeting = in.readLine().split(",");
         if(greeting[0].equals("SECURE INIT")){
             //Cifrar el reto con la llave privada y enviarlo al cliente
-            byte[] primer = cifrarPrivada(privateKey, greeting[1]);
-            String textoCifradoEnviar = Base64.getEncoder().encodeToString(primer);
-            out.println(textoCifradoEnviar);
+            byte[] primer = cifrarPrivada(privateKey, greeting[1]); 
+            out.println(byteArrayToHexString(primer));
         }
         //Recibir del cliente OK o ERROR
         String oka = in.readLine();
@@ -139,7 +140,7 @@ public class ServidorThread extends Thread{
         out.println(p);
         out.println(g);
         out.println(gx1);
-        out.println(Base64.getEncoder().encodeToString(vi));
+        out.println(byteArrayToHexString(vi));
 
         //Enviar valores cifrados
         //TODO: FALTA HACER LA VERIFICACION
@@ -154,10 +155,10 @@ public class ServidorThread extends Thread{
         out.println("CONTINUAR");
 
         //Recibir Usuario
-        byte[] usuarioCifrado = Base64.getDecoder().decode(in.readLine());
+        byte[] usuarioCifrado = hexStringToByteArray(in.readLine());
 
         //Recibir Contraseña
-        byte[] passCifrado = Base64.getDecoder().decode(in.readLine());
+        byte[] passCifrado = hexStringToByteArray(in.readLine());
 
         //Verificar usuario y contraseña
         boolean verif = verificarUsuario(usuarioCifrado, passCifrado);
@@ -182,6 +183,16 @@ public class ServidorThread extends Thread{
             hexString.append(hex);
         }
         return hexString.toString();
+    }
+
+    public static byte[] hexStringToByteArray(String hexString) {
+        int len = hexString.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4)
+                                 + Character.digit(hexString.charAt(i+1), 16));
+        }
+        return data;
     }
 
     @Override
