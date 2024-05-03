@@ -105,6 +105,17 @@ public class Cliente {
     }
 
 
+    public boolean verificarFirma(PublicKey pub, String data, byte[] signatureBytes) throws SignatureException, NoSuchAlgorithmException, InvalidKeyException{
+
+        Signature verifier = Signature.getInstance("SHA256withRSA");
+        verifier.initVerify(pub);
+        verifier.update(data.getBytes());
+
+        return verifier.verify(signatureBytes);
+
+    }
+
+
     public void secureStart() throws Exception {
 
         //Enviar inicializacion del servidor con el reto
@@ -124,15 +135,28 @@ public class Cliente {
 
 
         //Recibir P, G y G^x
-        p = new BigInteger(in.readLine());
         g =  Integer.parseInt(in.readLine());
+        p = new BigInteger(in.readLine());
         gx1 = Integer.parseInt(in.readLine());
         vi = hexStringToByteArray(in.readLine());
 
         //RECIBIR VALORES CIFRADOS 
-        //TODO: FALTA RECIBIR Y ENVIAR OK
+        String firma = in.readLine();
+        byte[] firmaBytes = hexStringToByteArray(firma);
+        
+        String aVerificar = g + "," + p + "," + gx1;
 
-        //Enviar gx2
+
+        boolean verificar = verificarFirma(publicKey, aVerificar, firmaBytes);
+
+        if(verificar){
+            out.println("OK");
+        }
+
+
+
+
+        //Enviar gx2S
         gx2 = procesarGX();
         out.println(gx2);
 

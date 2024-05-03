@@ -2,7 +2,6 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Random;
 
 import javax.crypto.*;
@@ -113,6 +112,21 @@ public class ServidorThread extends Thread{
 
     }
 
+
+    public byte[] signDocument(PrivateKey priv, String msg) throws Exception{
+
+        Signature signature = Signature.getInstance("SHA256withRSA");
+        signature.initSign(priv);
+
+        byte[] data = msg.getBytes();
+
+        signature.update(data);
+
+        return signature.sign();
+
+
+    }
+
     public void handleCliente() throws Exception{
 
         //Crear IN y OUT para la conexion
@@ -137,13 +151,23 @@ public class ServidorThread extends Thread{
             System.out.println("Verificacion Terminada Exitosamente");
         }
         //Enviar valores de P, G, G^x y vector de inicializacion al cliente
-        out.println(p);
         out.println(g);
+        out.println(p);
         out.println(gx1);
         out.println(byteArrayToHexString(vi));
 
-        //Enviar valores cifrados
-        //TODO: FALTA HACER LA VERIFICACION
+        //Enviar valores cifrados firma
+        String firma = g + "," + p + "," + gx1;
+
+        byte[] firmaCifrada = signDocument(privateKey, firma);
+        out.println(byteArrayToHexString(firmaCifrada));
+
+        //Recibir OK
+        oka = in.readLine();
+        if (oka.equals("OK")){
+        
+            System.out.println("Verificado G, P y G^X correctamente");
+        }
 
         //Recibir gx2
         gx2 = Integer.parseInt(in.readLine());
@@ -166,6 +190,8 @@ public class ServidorThread extends Thread{
         if(verif){
             System.out.println("Usuario Verificado");
         }
+
+
 
 
         in.close();
