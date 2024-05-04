@@ -25,8 +25,8 @@ public class ServidorThread extends Thread{
     private int gx1;
     private int gx2;
     private byte[] vi;
-    private byte[] llaveAutentica;
-    private byte[] llaveHMAC;
+    private SecretKeySpec llaveAutentica;
+    private SecretKeySpec llaveHMAC;
 
     //Constructor
     public ServidorThread(Socket clientSocket, PrivateKey privateKey, BigInteger p, int g){
@@ -81,15 +81,14 @@ public class ServidorThread extends Thread{
         digest.update(z1.toString().getBytes());
         byte[] hash = digest.digest();
 
-        llaveAutentica = Arrays.copyOfRange(hash, 0, hash.length / 2);
-        llaveHMAC = Arrays.copyOfRange(hash, hash.length / 2, hash.length);
+        llaveAutentica = new SecretKeySpec(Arrays.copyOfRange(hash, 0, hash.length / 2), "AES");
+        llaveHMAC = new SecretKeySpec(Arrays.copyOfRange(hash, hash.length / 2, hash.length), "HmacSHA256");
     }
 
-    public static String decifrarSimetrico(byte[] encrypted, byte[] key, byte[] iv) throws Exception {
+    public static String decifrarSimetrico(byte[] encrypted, SecretKeySpec secretKey, byte[] iv) throws Exception {
         
         // Create AES cipher in CBC mode with PKCS5Padding
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
         cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(iv));
 
         // Decrypt the message
@@ -98,11 +97,10 @@ public class ServidorThread extends Thread{
         return new String(decrypted);
     }
 
-    public byte[] cifrarSimetrico(String message, byte[] key)throws Exception{
+    public byte[] cifrarSimetrico(String message, SecretKeySpec secretKey)throws Exception{
 
         // Create AES cipher in CBC mode with PKCS5Padding
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(vi));
 
         // Encrypt the message
@@ -141,9 +139,8 @@ public class ServidorThread extends Thread{
     }
 
 
-    public byte[] calcularHMAC(byte[] key, String msg) throws NoSuchAlgorithmException, InvalidKeyException{
+    public byte[] calcularHMAC(SecretKeySpec secretKeySpec, String msg) throws NoSuchAlgorithmException, InvalidKeyException{
 
-        SecretKeySpec secretKeySpec = new SecretKeySpec(key, "HmacSHA256");
         Mac mac = Mac.getInstance("HmacSHA256");
         mac.init(secretKeySpec);
 
