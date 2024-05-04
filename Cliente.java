@@ -290,7 +290,6 @@ public class Cliente implements Runnable {
             duration = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
             System.out.println("Time to generate the authentication code for client " + i + ": " + duration + " ms");
 
-            // Wait for a while before moving to the next client
             Thread.sleep(1000);
         }
     }
