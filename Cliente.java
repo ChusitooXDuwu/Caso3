@@ -5,6 +5,7 @@ import java.security.spec.*;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Random;
+import java.util.Scanner;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -13,7 +14,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.math.BigInteger;
 
-public class Cliente {
+public class Cliente extends Thread{
 
     private Socket clientSocket;
     private PrintWriter out;
@@ -27,6 +28,12 @@ public class Cliente {
     private byte[] vi;
     private SecretKeySpec llaveAutentica;
     private SecretKeySpec llaveHMAC;
+
+    private long verificarFirmaTime;
+    private long calcularGX2Time;
+    private long cifrarConsultaTime;
+    private long generarCodigoAuthTime;
+
 
 
     public Cliente() throws InvalidKeySpecException, NoSuchAlgorithmException{
@@ -136,6 +143,11 @@ public class Cliente {
     }
 
 
+    public void printTimes(){
+
+        System.out.println("\n\n----- Protocolo terminado -----\n" + "- Tiempo para verificar la firma: " + verificarFirmaTime + " nanosegundos\n" + "- Tiempo para calcular G^y: " + calcularGX2Time + " nanosegundos\n" + "- Tiempo para cifrar consulta: " + cifrarConsultaTime + " nanosegundos\n" + "- Tiempo para cifrar consulta: " + cifrarConsultaTime + " nanosegundos\n" + "- Tiempo para generar codigo de autenticacion: " + generarCodigoAuthTime + " nanosegundos\n");
+    }
+
 
     public void secureStart() throws Exception {
 
@@ -167,8 +179,12 @@ public class Cliente {
         
         String aVerificar = g + "," + p + "," + gx1;
 
-
+        long startTime = System.nanoTime();
         boolean verificar = verificarFirma(publicKey, aVerificar, firmaBytes);
+        long endTime = System.nanoTime();
+
+        verificarFirmaTime = endTime - startTime;
+
 
         if(verificar){
             out.println("OK");
@@ -178,7 +194,12 @@ public class Cliente {
 
 
         //Enviar gx2S
+        startTime = System.nanoTime();
         gx2 = procesarGX();
+        endTime = System.nanoTime();
+
+        calcularGX2Time = endTime - startTime;
+
         out.println(gx2);
 
         //Procesar Llaves
@@ -209,11 +230,21 @@ public class Cliente {
 
         //Enviar Consulta
         String consulta = "HOLA ME PueDES HACER ESTO SOY UNA CONSULTA";
+
+        startTime = System.nanoTime();
         byte[] consultaCifrada = cifrarSimetrico(consulta, llaveAutentica);
+        endTime = System.nanoTime();
+
+        cifrarConsultaTime =  endTime - startTime;
         out.println(byteArrayToHexString(consultaCifrada));
 
         //Enviar HMAC Consulta
+        startTime = System.nanoTime();
         byte[] hmacConsulta = calcularHMAC(llaveHMAC, consulta);
+        endTime = System.nanoTime();
+
+        generarCodigoAuthTime = endTime - startTime;
+
         out.println(byteArrayToHexString(hmacConsulta));
 
         //Recibir Respuesta
@@ -232,8 +263,8 @@ public class Cliente {
             System.out.println("La Respuesta no tiene el mismo codigo");
         }
 
+        printTimes();
 
-        
     }
 
     public static String byteArrayToHexString(byte[] array) {
@@ -258,11 +289,31 @@ public class Cliente {
         return data;
     }
 
-    public static void main(String[] args) throws Exception {
+    @Override
+    public void run(){
 
-        Cliente cliente = new Cliente();
-        cliente.startConnection("127.0.0.1", 6666);
-        cliente.secureStart();
+        try {
+            startConnection("127.0.0.1", 6666);
+            secureStart();
+        } catch (Exception e) {
+
+            e.printStackTrace();
+        }
+        
+    }
+
+
+    public static void main(String[] args) throws Exception {
+        try (Scanner scanner = new Scanner(System.in)) {
+            System.out.print("\n\n *** Cuantos clientes quiere: ");
+            int numClientes = Integer.parseInt(scanner.nextLine());
+
+            Cliente[] clientes = new Cliente[numClientes];
+            for (int i = 0; i < numClientes; i++) {
+                clientes[i] = new Cliente();
+                clientes[i].start();
+            }
+        }
 
     }
 }

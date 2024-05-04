@@ -28,6 +28,10 @@ public class ServidorThread extends Thread{
     private SecretKeySpec llaveAutentica;
     private SecretKeySpec llaveHMAC;
 
+    private long generarFirmaTime;
+    private long decifrarConsultaTime;
+    private long verificarCodigoAuthTime;
+
     //Constructor
     public ServidorThread(Socket clientSocket, PrivateKey privateKey, BigInteger p, int g){
 
@@ -147,6 +151,12 @@ public class ServidorThread extends Thread{
         return  mac.doFinal(msg.getBytes());
     }
 
+
+    public void printTimes(){
+
+        System.out.println("\n----- Protocolo terminado ----- \n" + "- Tiempo para generar firma: " + generarFirmaTime + " nanosegundos\n" + "- Tiempo para decifrar consulta: " + decifrarConsultaTime + " nanosegundos\n" + "- Tiempo para verificar el codigo: " + verificarCodigoAuthTime + " nanosegundos");
+    }
+
     public void handleCliente() throws Exception{
 
         //Crear IN y OUT para la conexion
@@ -179,7 +189,12 @@ public class ServidorThread extends Thread{
         //Enviar valores cifrados firma
         String firma = g + "," + p + "," + gx1;
 
+        long startTime = System.nanoTime();
         byte[] firmaCifrada = signDocument(privateKey, firma);
+        long endTime = System.nanoTime();
+
+        generarFirmaTime = endTime - startTime;
+
         out.println(byteArrayToHexString(firmaCifrada));
 
         //Recibir OK
@@ -214,10 +229,17 @@ public class ServidorThread extends Thread{
 
         //Recibir Consulta
         byte[] consultaCifrada = hexStringToByteArray(in.readLine());
+
+        startTime = System.nanoTime();
         String consulta = decifrarSimetrico(consultaCifrada, llaveAutentica, vi);
+        endTime = System.nanoTime();
+
+        decifrarConsultaTime = endTime - startTime;
 
         byte[] hmacConsulta = hexStringToByteArray(in.readLine());
-        
+
+
+        startTime = System.nanoTime();
         if(Arrays.equals(hmacConsulta, calcularHMAC(llaveHMAC, consulta))){
 
             System.out.println("Consulta verificado Correctamente");
@@ -225,6 +247,9 @@ public class ServidorThread extends Thread{
         }else{
             System.out.println("El consulta no tiene el mismo codigo");
         }
+        endTime = System.nanoTime();
+
+        verificarCodigoAuthTime = endTime - startTime;
 
 
         //Enviar Respuesta
@@ -241,6 +266,7 @@ public class ServidorThread extends Thread{
         clientSocket.close();
 
         System.out.println("Sesion terminada");
+        printTimes();
     }
 
     public static String byteArrayToHexString(byte[] array) {
