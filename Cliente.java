@@ -142,6 +142,45 @@ public class Cliente extends Thread{
         return  mac.doFinal(msg.getBytes());
     }
 
+    public void enviarMensaje(String mensaje) throws Exception {
+        System.out.println("ERROR");
+        out.println(mensaje);
+    }
+
+    public void cerrarConexion() throws Exception {
+        in.close();
+        out.close();
+        clientSocket.close();
+    }
+
+    public void validarRespuesta(String respuesta) throws Exception {
+        if (!respuesta.equals("Valid")) {
+            throw new Exception("Respuesta inválida");
+        }
+
+    }
+
+    public void procesarRespuesta() {
+        try {
+             // Assume this is how you get the response
+            secureStart();
+        } catch (Exception e) {
+            System.out.println("Error en la validación: " + e.getMessage());
+            try {
+                enviarMensaje("ERROR");
+            } catch (Exception ex) {
+                System.out.println("Error al enviar mensaje de ERROR: " + ex.getMessage());
+            } finally {
+                try {
+                    cerrarConexion();
+                } catch (Exception exc) {
+                    System.out.println("Error al cerrar la conexión: " + exc.getMessage());
+                }
+            }
+        }
+    }
+
+
 
     public void printTimes(){
 
@@ -174,6 +213,8 @@ public class Cliente extends Thread{
         vi = hexStringToByteArray(in.readLine());
 
         //RECIBIR VALORES CIFRADOS 
+        // lave para probar el error
+        //String firma = "1bb865fb3ec7deb10845c9ad0765212b168d8d75b422e1f3eff2a228699e77d6dd5c5ff9c1620b014557de60acbd140552cdf53bcc5b11b7288b191fa665bb577ed51f72c550fa430939a60295f3fc924c533420a93cbd51f7ecab75d631dc9448ff9abf99b7c12e6154b8e577aecd4ce15bc4859f75a0521eee9c1e59a8d0e3";
         String firma = in.readLine();
         byte[] firmaBytes = hexStringToByteArray(firma);
         
@@ -188,6 +229,13 @@ public class Cliente extends Thread{
 
         if(verificar){
             out.println("OK");
+        }
+        else{
+            out.println("ERROR");
+            //close connection
+            in.close();
+            out.close();
+
         }
 
 
@@ -209,6 +257,11 @@ public class Cliente extends Thread{
         String cont = in.readLine();
         if (cont.equals("CONTINUAR")){
             System.out.println("CONTINUAR RECIBIDO");
+        }
+        else{
+            System.out.println("Error en la verificacion de CONTINUAR");
+            System.out.println("ERROR");
+            out.println("ERROR");
         }
 
         //Enviar usuario
@@ -311,8 +364,12 @@ public class Cliente extends Thread{
             Cliente[] clientes = new Cliente[numClientes];
             for (int i = 0; i < numClientes; i++) {
                 clientes[i] = new Cliente();
+                
                 clientes[i].start();
             }
+        }
+        catch (Exception e) {
+            System.out.println("Error de conexión: " + e.getMessage());
         }
 
     }
