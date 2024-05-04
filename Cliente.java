@@ -116,6 +116,29 @@ public class Cliente {
     }
 
 
+    public byte[] calcularHMAC(byte[] key, String msg) throws NoSuchAlgorithmException, InvalidKeyException{
+
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key, "HmacSHA256");
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(secretKeySpec);
+
+        return  mac.doFinal(msg.getBytes());
+    }
+
+    public static String decifrarSimetrico(byte[] encrypted, byte[] key, byte[] iv) throws Exception {
+        
+        // Create AES cipher in CBC mode with PKCS5Padding
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(iv));
+
+        // Decrypt the message
+        byte[] decrypted = cipher.doFinal(encrypted);
+
+        return new String(decrypted);
+    }
+
+
     public void secureStart() throws Exception {
 
         //Enviar inicializacion del servidor con el reto
@@ -177,6 +200,39 @@ public class Cliente {
         byte[] passCifrado = cifrarSimetrico("SOYUNAPASS", llaveAutentica);
         out.println(byteArrayToHexString(passCifrado));
 
+
+        //Recibir OK
+        String oka = in.readLine();
+        if (oka.equals("OK")){
+    
+            System.out.println("Ya puedo enviar la consulta");
+        }
+
+
+        //Enviar Consulta
+        String consulta = "HOLA ME PueDES HACER ESTO SOY UNA CONSULTA";
+        byte[] consultaCifrada = cifrarSimetrico(consulta, llaveAutentica);
+        out.println(byteArrayToHexString(consultaCifrada));
+
+        //Enviar HMAC Consulta
+        byte[] hmacConsulta = calcularHMAC(llaveHMAC, consulta);
+        out.println(byteArrayToHexString(hmacConsulta));
+
+        //Recibir Respuesta
+        byte[] respuestaCifrada = hexStringToByteArray(in.readLine());
+        String respuesta = decifrarSimetrico(respuestaCifrada, llaveAutentica, vi);
+
+        //Recibir HMAC Respuesta
+        byte[] hmacRespuesta = hexStringToByteArray(in.readLine());
+
+        //Verificar mensaje
+        if(Arrays.equals(hmacRespuesta, calcularHMAC(llaveHMAC, respuesta))){
+
+            System.out.println("Respuesta verificado Correctamente");
+
+        }else{
+            System.out.println("La Respuesta no tiene el mismo codigo");
+        }
 
 
         

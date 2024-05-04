@@ -98,6 +98,19 @@ public class ServidorThread extends Thread{
         return new String(decrypted);
     }
 
+    public byte[] cifrarSimetrico(String message, byte[] key)throws Exception{
+
+        // Create AES cipher in CBC mode with PKCS5Padding
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(vi));
+
+        // Encrypt the message
+        byte[] encrypted = cipher.doFinal(message.getBytes());
+
+        return encrypted;
+    }
+
     public boolean verificarUsuario(byte[] uCif, byte[] pCif) throws Exception{
 
 
@@ -125,6 +138,16 @@ public class ServidorThread extends Thread{
         return signature.sign();
 
 
+    }
+
+
+    public byte[] calcularHMAC(byte[] key, String msg) throws NoSuchAlgorithmException, InvalidKeyException{
+
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key, "HmacSHA256");
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(secretKeySpec);
+
+        return  mac.doFinal(msg.getBytes());
     }
 
     public void handleCliente() throws Exception{
@@ -188,15 +211,39 @@ public class ServidorThread extends Thread{
         boolean verif = verificarUsuario(usuarioCifrado, passCifrado);
 
         if(verif){
-            System.out.println("Usuario Verificado");
+            System.out.println("Usuario Verificado");   
+            out.println("OK");
+        }
+
+        //Recibir Consulta
+        byte[] consultaCifrada = hexStringToByteArray(in.readLine());
+        String consulta = decifrarSimetrico(consultaCifrada, llaveAutentica, vi);
+
+        byte[] hmacConsulta = hexStringToByteArray(in.readLine());
+        
+        if(Arrays.equals(hmacConsulta, calcularHMAC(llaveHMAC, consulta))){
+
+            System.out.println("Consulta verificado Correctamente");
+
+        }else{
+            System.out.println("El consulta no tiene el mismo codigo");
         }
 
 
+        //Enviar Respuesta
+        String respuesta = "1";
+        byte[] respuestaCifrada = cifrarSimetrico(respuesta, llaveAutentica);
+        out.println(byteArrayToHexString(respuestaCifrada));
 
+        //Enviar HMAC respuesta
+        byte[] hmacRespuesta = calcularHMAC(llaveHMAC, respuesta);
+        out.println(byteArrayToHexString(hmacRespuesta));
 
         in.close();
         out.close();
         clientSocket.close();
+
+        System.out.println("Sesion terminada");
     }
 
     public static String byteArrayToHexString(byte[] array) {
