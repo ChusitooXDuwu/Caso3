@@ -279,20 +279,19 @@ public class Cliente implements Runnable {
 
             // Encrypt the query
             startTime = System.nanoTime();
-            // Logic to encrypt the query
             endTime = System.nanoTime();
             duration = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
             System.out.println("Time to encrypt the query for client " + i + ": " + duration + " ms");
 
             // Generate the authentication code
             startTime = System.nanoTime();
-            // Logic to generate the authentication code
+
             endTime = System.nanoTime();
             duration = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
             System.out.println("Time to generate the authentication code for client " + i + ": " + duration + " ms");
 
             // Wait for a while before moving to the next client
-            Thread.sleep(1000); // 1 second of wait time between each client
+            Thread.sleep(1000);
         }
     }
 
