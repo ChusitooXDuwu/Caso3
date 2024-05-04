@@ -178,61 +178,71 @@ public class ServidorThread extends Thread{
 
         //Enviar valores cifrados firma
         String firma = g + "," + p + "," + gx1;
-
+        
+        long startTime = System.nanoTime();
         byte[] firmaCifrada = signDocument(privateKey, firma);
         out.println(byteArrayToHexString(firmaCifrada));
 
-        //Recibir OK
+       
+        long endTime = System.nanoTime();
+        long signatureTime = endTime - startTime;
+        System.out.println("Tiempo para generar la firma: " + signatureTime + " ns");
+
+        // Recibir OK
         oka = in.readLine();
-        if (oka.equals("OK")){
-        
+        if (oka.equals("OK")) {
             System.out.println("Verificado G, P y G^X correctamente");
         }
 
-        //Recibir gx2
+        // Recibir gx2
         gx2 = Integer.parseInt(in.readLine());
 
-        //Calcular llaves
+        // Calcular llaves
         procesarLlaves();
 
-        //Enviar Continuar
+        // Enviar Continuar
         out.println("CONTINUAR");
 
-        //Recibir Usuario
+        // Recibir Usuario
         byte[] usuarioCifrado = hexStringToByteArray(in.readLine());
 
-        //Recibir Contraseña
+        // Recibir Contraseña
         byte[] passCifrado = hexStringToByteArray(in.readLine());
 
-        //Verificar usuario y contraseña
+        // Verificar usuario y contraseña
         boolean verif = verificarUsuario(usuarioCifrado, passCifrado);
 
-        if(verif){
-            System.out.println("Usuario Verificado");   
+        if (verif) {
+            System.out.println("Usuario Verificado");
             out.println("OK");
         }
 
-        //Recibir Consulta
+        // Recibir Consulta
+        startTime = System.nanoTime();
         byte[] consultaCifrada = hexStringToByteArray(in.readLine());
         String consulta = decifrarSimetrico(consultaCifrada, llaveAutentica, vi);
+        endTime = System.nanoTime();
+        long decryptionTime = endTime - startTime;
+        System.out.println("Tiempo para descifrar la consulta: " + decryptionTime + " ns");
 
         byte[] hmacConsulta = hexStringToByteArray(in.readLine());
-        
-        if(Arrays.equals(hmacConsulta, calcularHMAC(llaveHMAC, consulta))){
 
+        startTime = System.nanoTime();
+        if (Arrays.equals(hmacConsulta, calcularHMAC(llaveHMAC, consulta))) {
             System.out.println("Consulta verificado Correctamente");
-
-        }else{
+        } else {
             System.out.println("El consulta no tiene el mismo codigo");
         }
+        endTime = System.nanoTime();
+        long hmacVerificationTime = endTime - startTime;
+        System.out.println("Tiempo para verificar el código de autenticación: " + hmacVerificationTime + " ns");
 
-
-        //Enviar Respuesta
+        // Enviar Respuesta
         String respuesta = "1";
         byte[] respuestaCifrada = cifrarSimetrico(respuesta, llaveAutentica);
         out.println(byteArrayToHexString(respuestaCifrada));
 
-        //Enviar HMAC respuesta
+        // Enviar HMAC respuesta
         byte[] hmacRespuesta = calcularHMAC(llaveHMAC, respuesta);
         out.println(byteArrayToHexString(hmacRespuesta));
 
@@ -264,6 +274,7 @@ public class ServidorThread extends Thread{
         }
         return data;
     }
+
 
     @Override
     public void run(){

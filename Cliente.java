@@ -5,6 +5,7 @@ import java.security.spec.*;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -13,7 +14,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.math.BigInteger;
 
-public class Cliente {
+public class Cliente implements Runnable {
 
     private Socket clientSocket;
     private PrintWriter out;
@@ -258,10 +259,57 @@ public class Cliente {
         return data;
     }
 
+    public void measureTimes(int numClients) throws Exception {
+        for (int i = 0; i < numClients; i++) {
+            long startTime, endTime, duration;
+
+            // Verify the signature
+            startTime = System.nanoTime();
+            // Logic to verify the signature
+            endTime = System.nanoTime();
+            duration = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
+            System.out.println("Time to verify the signature for client " + i + ": " + duration + " ms");
+
+            // Calculate Gy
+            startTime = System.nanoTime();
+            // Logic to calculate Gy
+            endTime = System.nanoTime();
+            duration = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
+            System.out.println("Time to calculate Gy for client " + i + ": " + duration + " ms");
+
+            // Encrypt the query
+            startTime = System.nanoTime();
+            // Logic to encrypt the query
+            endTime = System.nanoTime();
+            duration = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
+            System.out.println("Time to encrypt the query for client " + i + ": " + duration + " ms");
+
+            // Generate the authentication code
+            startTime = System.nanoTime();
+            // Logic to generate the authentication code
+            endTime = System.nanoTime();
+            duration = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
+            System.out.println("Time to generate the authentication code for client " + i + ": " + duration + " ms");
+
+            // Wait for a while before moving to the next client
+            Thread.sleep(1000); // 1 second of wait time between each client
+        }
+    }
+
+    @Override
+    public void run() {
+        try {
+            secureStart();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) throws Exception {
 
         Cliente cliente = new Cliente();
         cliente.startConnection("127.0.0.1", 6666);
+        cliente.measureTimes(4); // Adjust the numClients according to the tests
         cliente.secureStart();
 
     }
