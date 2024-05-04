@@ -142,11 +142,6 @@ public class Cliente extends Thread{
         return  mac.doFinal(msg.getBytes());
     }
 
-    public void enviarMensaje(String mensaje) throws Exception {
-        System.out.println("ERROR");
-        out.println(mensaje);
-    }
-
     public void cerrarConexion() throws Exception {
         in.close();
         out.close();
@@ -158,26 +153,6 @@ public class Cliente extends Thread{
             throw new Exception("Respuesta inválida");
         }
 
-    }
-
-    public void procesarRespuesta() {
-        try {
-             // Assume this is how you get the response
-            secureStart();
-        } catch (Exception e) {
-            System.out.println("Error en la validación: " + e.getMessage());
-            try {
-                enviarMensaje("ERROR");
-            } catch (Exception ex) {
-                System.out.println("Error al enviar mensaje de ERROR: " + ex.getMessage());
-            } finally {
-                try {
-                    cerrarConexion();
-                } catch (Exception exc) {
-                    System.out.println("Error al cerrar la conexión: " + exc.getMessage());
-                }
-            }
-        }
     }
 
 
@@ -209,6 +184,8 @@ public class Cliente extends Thread{
             in.close();
             out.close();
             System.out.println("Error en el reto");
+            interrupt();
+            return;
         }
 
         //Recibir P, G y G^x
@@ -240,10 +217,10 @@ public class Cliente extends Thread{
             //close connection
             in.close();
             out.close();
+            interrupt();
+            return;
 
         }
-
-
 
 
         //Enviar gx2S
@@ -282,6 +259,8 @@ public class Cliente extends Thread{
             System.out.println("Error verificando usuario");
             in.close();
             out.close();
+            interrupt();
+            return;
 
         }
 

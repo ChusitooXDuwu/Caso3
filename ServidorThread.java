@@ -187,8 +187,11 @@ public class ServidorThread extends Thread{
             out.close();
             System.out.println("Sesion terminada");
             clientSocket.close();
+            interrupt();
+            return;
 
         }
+
         //Enviar valores de P, G, G^x y vector de inicializacion al cliente
         out.println(g);
         out.println(p);
@@ -219,8 +222,11 @@ public class ServidorThread extends Thread{
             out.close();
             System.out.println("Sesion terminada");
             clientSocket.close();
+            interrupt();
+            return;
 
         }
+
 
         //Recibir gx2
     
@@ -252,9 +258,10 @@ public class ServidorThread extends Thread{
             out.close();
             System.out.println("Sesion terminada");
             clientSocket.close();
-            
+            interrupt();
             return;
         }
+        System.out.println("SOY UNA PRUEBAAA");
 
         //Recibir Consulta
         byte[] consultaCifrada = hexStringToByteArray(in.readLine());
