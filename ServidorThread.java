@@ -180,6 +180,15 @@ public class ServidorThread extends Thread{
         
             System.out.println("Verificacion Terminada Exitosamente");
         }
+        else{
+
+            System.out.println("Verificacion Fallida");
+            in.close();
+            out.close();
+            System.out.println("Sesion terminada");
+            clientSocket.close();
+
+        }
         //Enviar valores de P, G, G^x y vector de inicializacion al cliente
         out.println(g);
         out.println(p);
@@ -203,21 +212,20 @@ public class ServidorThread extends Thread{
         
             System.out.println("Verificado G, P y G^X correctamente");
         }
+        else{
 
-        //Recibir gx2
-        try{
-            gx2 = Integer.parseInt(in.readLine());
-        }catch(Exception e){
-            System.out.println("Error al recibir gx2");
-            System.out.println("ERROR");
-            out.println("ERROR");
-            //close everything
+            System.out.println("Error firma G, P y G^X correctamente");
             in.close();
             out.close();
             System.out.println("Sesion terminada");
             clientSocket.close();
-            return;
+
         }
+
+        //Recibir gx2
+    
+        gx2 = Integer.parseInt(in.readLine());
+    
 
         //Calcular llaves
         procesarLlaves();
@@ -239,12 +247,10 @@ public class ServidorThread extends Thread{
             out.println("OK");
         }else{
             System.out.println("Usuario No Verificado");
-            System.out.println("ERROR");
             out.println("ERROR");
             in.close();
             out.close();
             System.out.println("Sesion terminada");
-            
             clientSocket.close();
             
             return;

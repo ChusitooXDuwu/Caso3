@@ -203,8 +203,13 @@ public class Cliente extends Thread{
         if (descifradoClaro.equals("Reto")){
 
             out.println("OK");
-        }
+        }else{
 
+            out.println("ERROR");
+            in.close();
+            out.close();
+            System.out.println("Error en el reto");
+        }
 
         //Recibir P, G y G^x
         g =  Integer.parseInt(in.readLine());
@@ -258,11 +263,6 @@ public class Cliente extends Thread{
         if (cont.equals("CONTINUAR")){
             System.out.println("CONTINUAR RECIBIDO");
         }
-        else{
-            System.out.println("Error en la verificacion de CONTINUAR");
-            System.out.println("ERROR");
-            out.println("ERROR");
-        }
 
         //Enviar usuario
         byte[] loginCifrado = cifrarSimetrico("SOYUNUSUARIO", llaveAutentica);
@@ -278,6 +278,11 @@ public class Cliente extends Thread{
         if (oka.equals("OK")){
     
             System.out.println("Ya puedo enviar la consulta");
+        }else{
+            System.out.println("Error verificando usuario");
+            in.close();
+            out.close();
+
         }
 
 
